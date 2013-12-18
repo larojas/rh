@@ -6,9 +6,9 @@
 
 from optparse import OptionParser
 
-import fileinput
 import google.protobuf.text_format as text_format
 from log import InitLog, Log
+from relays import Relays
 import rh_pb2 as rh
 import rh_config_pb2 as rh_config
 import relay_control as rc
@@ -16,43 +16,13 @@ import time
 
 DEFAULT_CONFIG_FILE = 'rh.conf'
 
-class Relays(object):
-  """This class manages the set of configured relays."""
-  def __init__(self, config):
-    self.relaydict = {relay.relay.id: relay for relay in config.relay_config}
 
-  def IdList(self):
-    return self.relaydict.keys()
+def ReadConfig():
+  """Parses the command line flags and reads the config file.
 
-  def HwIdList(self):
-    return [relay.hardware_id for relay in self.relaydict.values()]
-
-  def Init(self):
-    """Initialize the hardware."""
-    rc.Init(self.HwIdList())
-
-  def Relay(self, id):
-    """Returns the relay proto for the given id."""
-    return self.relaydict[id].relay
-
-  def ReadState(self, id):
-    relay = self.relaydict[id]
-    status = rc.Status(relay.hardware_id)
-    relay.relay.state = (rh.Relay.CLOSED if status == rc.LEVEL_HI
-                         else rh.Relay.OPEN)
-    return relay.relay.state
-
-  def ReadAllStates(self):
-    for id in self.IdList():
-      self.ReadState(id)
-
-  def Close(self, id):
-    rc.On(self.relaydict[id].hardware_id)
-
-  def Open(self, id):
-    rc.Off(self.relaydict[id].hardware_id)
-
-def InitOptions():
+  Returns:
+    The config proto (see rh_config.proto) and any args.
+  """
   parser = OptionParser()
   parser.add_option('-c', '--conf', dest='config', metavar='FILE',
                     help='Configuration file name.')
@@ -67,7 +37,7 @@ def InitOptions():
     config_file = open(options.config, 'rt')
   except IOError:
     Log('ERROR: Could not open config file.\n')
-    return
+    return None, None
 
   config = rh_config.Config()
   text_format.Merge(config_file.read(), config)
@@ -75,15 +45,17 @@ def InitOptions():
   Log('Okay, read %d relay and %d sensor configurations.' 
       % (len(config.relay_config), len(config.sensor_config)))
   config_file.close()
-  return config
+  return config, args
 
 
 def main():
   InitLog(tstamp=False)
-  config = InitOptions()
+  config = ReadConfig()
 
-  relays = Relays(config)
-  relays.Init()
+  val_map = { rc.LEVEL_LO: rh.Relay.OPEN, rc.LEVEL_HI: rh.Relay.CLOSED }
+
+  relays = Relays(config, rc.On, rc.Off, rc.Status, val_map=val_map)
+  rc.Init(relays.HwIdList())
 
   #Log('Will run a sample loop.')
   #rc.SampleLoop(1)

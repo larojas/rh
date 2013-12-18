@@ -9,3 +9,5 @@ protos: $(PROTOS)
 clean:
 	rm -f dummy *_pb2.py *_pb2.pyc
 
+test: protos
+	python test/relays_test.py
