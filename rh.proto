@@ -1,0 +1,85 @@
+// Copyright 2013 Alberto Rojas (rojas.alberto@gmail.com)
+// All rights reserved.
+
+syntax = "proto2";
+
+package larxyz.rh;
+
+//
+// Common messages
+//
+message OpResult {
+  enum ResultCode {
+    OK = 1;
+    ERROR = 2;        // General or other unspecified error.
+    NOT_FOUND = 3;    // The target of the operation was not found.
+    BAD_REQUEST = 4;  // The request was malformed.
+    INTERNAL = 5;     // Internal error e.g. misconfigured server.
+    TIMEOUT = 6;      // The server timed out waiting for the op to complete.
+  }
+
+  optional ResultCode code = 1;
+  optional int32 subcode = 2;
+  optional string description = 3;
+}
+
+
+//
+// Relays
+//
+message Relay {
+  enum State {
+    OPEN = 0;
+    CLOSED = 1;
+    UNKNOWN = 2;
+  }
+
+  optional string id = 1;
+  optional string name = 2;
+  optional State state = 3 [default=UNKNOWN];
+}
+
+message RelayWriteRequest {
+  optional Relay relay = 1;
+  optional bool read = 2 [default=false];
+}
+
+message RelayReadRequest {
+  optional Relay relay = 1;
+}
+
+message RelayResponse {
+  optional OpResult result = 1;
+  optional Relay relay = 2;
+}
+
+
+//
+// Sensors
+//
+message Sensor {
+
+  message Status {
+    optional int32 status_id = 1;
+    optional bool bool_value = 2;
+    optional int32 int_value = 3;
+    optional double double_value = 4;
+    optional string string_value = 5;
+  }
+
+  optional string id = 1;
+  optional string name = 2;
+  repeated Status status = 3;
+}
+
+message SensorReadRequest {
+  optional Sensor sensor = 1;
+}
+
+message SensorResponse {
+  optional OpResult result = 1;
+  optional Sensor sensor = 2;
+}
+
+  
+
