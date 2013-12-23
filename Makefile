@@ -7,7 +7,7 @@ protos: $(PROTOS)
 	protoc $(PROTOC_OPT) $(PROTOS)
 
 clean:
-	rm -f dummy *_pb2.py *_pb2.pyc
+	rm -f dummy *_pb2.py *.pyc *.py~
 
 test: protos
 	python test/relays_test.py
