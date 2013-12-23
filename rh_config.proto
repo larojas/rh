@@ -27,6 +27,7 @@ message Config {
   repeated SensorConfig sensor_config = 3;
 
   optional string log_file = 4;
-  
+
+  optional string relay_module_name = 5;
 }
 
