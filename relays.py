@@ -28,7 +28,7 @@ class Relays(object):
     def read(self, id):
       """Read the current status of the relay."""
       pass
-    def init(self, id):
+    def init(self, ids):
       """Initialize the relay hardware."""
       pass
 
@@ -43,8 +43,7 @@ class Relays(object):
     """
     self.relaydict = {relay.relay.id: relay for relay in config.relay_config}
     self.relaycontrol = relay_control
-    for hwid in self.HwIdList():
-      self.relaycontrol.init(hwid)
+    self.relaycontrol.init(self.HwIdList())
 
   def IdList(self):
     """A list with the string ids of all configured relays."""
