@@ -50,7 +50,7 @@ message RelayReadRequest {
 
 message RelayResponse {
   optional OpResult result = 1;
-  optional Relay relay = 2;
+  repeated Relay relay = 2;
 }
 
 
