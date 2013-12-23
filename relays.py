@@ -17,24 +17,34 @@ class Relays(object):
   its work.
 
   """
-  def __init__(self, config, close_func, open_func, read_func, val_map):
+  class RelayControl(object):
+    """Base class for controling hardware relays."""
+    def open(self, id):
+      """Open the relay (turn it off)."""
+      pass
+    def close(self, id):
+      """Close the relay (turn it on)."""
+      pass
+    def read(self, id):
+      """Read the current status of the relay."""
+      pass
+    def init(self, id):
+      """Initialize the relay hardware."""
+      pass
+
+
+  def __init__(self, config, relay_control):
     """Construct the object from a configuration proto.
 
     Args:
       config: Configuration proto (see rh_config.proto).
-      close_func: Function to close a relay. Takes the hardware id as an int
-          and returns a bool.
-      open_func: Function to open a relay. Takes the hardware id as an int
-          and returns a bool.
-      read_func: Function to read a relay status. Takes the hardware id as an
-          int and returns something.
-      val_map: Dictionary of the form {read_func_value: proto_relay_state}.
+      relay_control: A RelayControl object implementing the interface to
+        control real relays.
     """
     self.relaydict = {relay.relay.id: relay for relay in config.relay_config}
-    self.close_func = close_func
-    self.open_func = open_func
-    self.read_func = read_func
-    self.val_map = val_map
+    self.relaycontrol = relay_control
+    for hwid in self.HwIdList():
+      self.relaycontrol.init(hwid)
 
   def IdList(self):
     """A list with the string ids of all configured relays."""
@@ -46,13 +56,14 @@ class Relays(object):
 
   def Relay(self, id):
     """Returns the relay proto for the given id."""
-    return self.relaydict[id].relay
+    relay_cfg = self.relaydict.get(id)
+    if relay_cfg:
+      return relay_cfg.relay
 
   def ReadState(self, id):
     """Reads the state of a relay, writes it in the proto, and returns it."""
     relay = self.relaydict[id]
-    hw_status = self.read_func(relay.hardware_id)
-    relay.relay.state = self.val_map.get(hw_status, rh.Relay.UNKNOWN)
+    relay.relay.state = self.relaycontrol.read(relay.hardware_id)
     return relay.relay.state
 
   def ReadAllStates(self):
@@ -61,7 +72,7 @@ class Relays(object):
       self.ReadState(id)
 
   def Close(self, id):
-    return self.close_func(self.relaydict[id].hardware_id)
+    return self.relaycontrol.close(self.relaydict[id].hardware_id)
 
   def Open(self, id):
-    return self.open_func(self.relaydict[id].hardware_id)
+    return self.relaycontrol.open(self.relaydict[id].hardware_id)
