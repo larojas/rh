@@ -13,18 +13,25 @@ import relays
 import rh_pb2 as rh
 import rh_config_pb2 as rh_config
 
-class MockRelayControl(object):
+class MockRelayControl(relays.Relays.RelayControl):
   def __init__(self, num_relays):
-    self.relays = [0] * num_relays
+    print "Initializing %d relays." % num_relays
+    self.relays = [rh.Relay.OPEN] * num_relays
 
   def close(self, id):
-    self.relays[id] = 1
+    print "Closing relay %d." % id
+    self.relays[id] = rh.Relay.CLOSED
 
   def open(self, id):
-    self.relays[id] = 0
+    print "Opening relay %d." % id
+    self.relays[id] = rh.Relay.OPEN
 
-  def state(self, id):
+  def read(self, id):
+    print "Reading state of relay %d = %d." % (id, self.relays[id])
     return self.relays[id]
+
+  def init(self, id):
+    print "Initializing relay %d." % id
 
 
 class TestRelays(unittest.TestCase):
@@ -40,9 +47,7 @@ class TestRelays(unittest.TestCase):
       config.relay_config.add().MergeFrom(relay_config)
 
     self.rc = MockRelayControl(5)
-    val_map = {0: rh.Relay.OPEN, 1: rh.Relay.CLOSED }
-    self.relays = relays.Relays(config, self.rc.close, self.rc.open,
-                                self.rc.state, val_map)
+    self.relays = relays.Relays(config, self.rc)
 
   def testIdList(self):
     self.assertEqual(["r%d" % i for i in range(5)],
